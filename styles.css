@@ -709,30 +709,46 @@ input[type="text"]:focus, input[type="number"]:focus {
 
 .scoreboard-header {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     gap: 15px;
     margin-bottom: 20px;
     position: relative;
 }
 
+.scoreboard-header h2 {
+    flex-shrink: 0;
+}
+
+.header-right-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .exit-btn {
-    position: absolute;
-    left: 0;
-    padding: 8px 15px;
-    font-size: 0.85rem;
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    padding: 12px 25px;
+    font-size: 0.9rem;
     font-family: 'Noto Sans KR', sans-serif;
-    background: transparent;
-    border: 1px solid var(--accent-red);
-    border-radius: 8px;
+    font-weight: bold;
+    background: rgba(26, 26, 46, 0.95);
+    border: 2px solid var(--accent-red);
+    border-radius: 10px;
     color: var(--accent-red);
     cursor: pointer;
     transition: all 0.3s;
+    z-index: 100;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .exit-btn:hover {
     background: var(--accent-red);
     color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 20, 60, 0.4);
 }
 
 .scoreboard h2 {
@@ -848,6 +864,28 @@ input[type="text"]:focus, input[type="number"]:focus {
 
 .score-table th.remain-col {
     background: rgba(255, 51, 102, 0.2);
+}
+
+/* 팀 합계 행 스타일 */
+.score-table .team-total-row {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 51, 102, 0.1));
+    border-top: 2px solid var(--accent-gold);
+    border-bottom: 2px solid var(--accent-gold);
+}
+
+.score-table .team-total-row td {
+    font-weight: bold;
+    padding: 10px 6px;
+}
+
+.score-table .team-total-row .team-name {
+    color: var(--accent-gold);
+    font-family: 'Orbitron', sans-serif;
+}
+
+.score-table .team-total-row .total-score {
+    font-size: 1.1rem;
+    color: var(--accent-gold);
 }
 
 .team-header {
@@ -1232,3 +1270,238 @@ input[type="text"]:focus, input[type="number"]:focus {
     }
 }
 
+/* ===== 입력 모드 전환 ===== */
+.input-mode-toggle {
+    display: flex;
+    gap: 5px;
+}
+
+.mode-btn {
+    padding: 6px 12px;
+    border: 2px solid var(--accent-blue);
+    background: transparent;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+.mode-btn:hover {
+    background: rgba(0, 212, 255, 0.1);
+}
+
+.mode-btn.active {
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+    border-color: transparent;
+    color: var(--bg-primary);
+    font-weight: bold;
+}
+
+.input-mode {
+    width: 100%;
+}
+
+/* ===== 격자표 입력 모드 (2단 배열) ===== */
+.grid-input-container {
+    background: var(--bg-secondary);
+    border-radius: 20px;
+    padding: 15px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.grid-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* 2단 배열 행 */
+.grid-row-dual {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.grid-cell-group {
+    display: grid;
+    grid-template-columns: 40px 1.4fr 1fr 1fr;
+    gap: 4px;
+    align-items: center;
+}
+
+.grid-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    color: var(--accent-gold);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: bold;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    padding: 8px 4px;
+    min-height: 36px;
+}
+
+.grid-btn {
+    padding: 8px 4px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: bold;
+    transition: all 0.15s ease;
+    min-height: 36px;
+}
+
+.grid-btn.single {
+    background: linear-gradient(135deg, #2a2a3e, #1a1a2e);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.grid-btn.double {
+    background: linear-gradient(135deg, #00a86b, #007a4d);
+    color: white;
+    border-color: #00ff88;
+}
+
+.grid-btn.triple {
+    background: linear-gradient(135deg, #dc143c, #a00f2d);
+    color: white;
+    border-color: #ff3366;
+}
+
+.grid-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.grid-btn:active {
+    transform: scale(0.95);
+}
+
+.grid-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Bull + MISS 행 (중앙 배치) */
+.grid-row-bull {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.bull-miss-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.grid-btn.bull-btn {
+    padding: 10px 25px;
+    font-size: 0.9rem;
+}
+
+.grid-btn.miss-btn {
+    padding: 10px 25px;
+    font-size: 0.9rem;
+    background: linear-gradient(135deg, #333, #1a1a1a);
+    border: 2px solid var(--accent-red);
+    color: var(--accent-red);
+}
+
+.grid-btn.miss-btn:hover {
+    background: var(--accent-red);
+    color: white;
+}
+
+.grid-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding: 0 10px;
+}
+
+.grid-controls .control-btn {
+    padding: 10px 25px;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.grid-controls .undo-btn {
+    background: var(--accent-red);
+    color: white;
+}
+
+.grid-controls .confirm-btn {
+    background: var(--accent-green);
+    color: var(--bg-primary);
+}
+
+.grid-controls .control-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.grid-controls .control-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* 격자표 모바일 대응 */
+@media (max-width: 768px) {
+    .grid-input-container {
+        padding: 10px;
+    }
+    
+    .grid-row-dual {
+        gap: 10px;
+    }
+    
+    .grid-cell-group {
+        grid-template-columns: 35px 1.4fr 1fr 1fr;
+        gap: 3px;
+    }
+    
+    .grid-number {
+        font-size: 0.8rem;
+        padding: 6px 3px;
+        min-height: 32px;
+    }
+    
+    .grid-btn {
+        padding: 6px 3px;
+        font-size: 0.7rem;
+        min-height: 32px;
+    }
+    
+    .input-mode-toggle {
+        gap: 3px;
+    }
+    
+    .mode-btn {
+        padding: 5px 8px;
+        font-size: 0.7rem;
+    }
+    
+    .header-right-group {
+        gap: 5px;
+    }
+}
