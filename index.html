@@ -106,11 +106,20 @@
             <div class="game-left-panel">
                 <div class="scoreboard">
                     <div class="scoreboard-header">
-                        <button class="exit-btn" onclick="exitGame()">✕ 종료</button>
                         <h2>📊 점수판</h2>
-                        <div class="game-type-badge">
-                            <span class="icon">🎯</span>
-                            <span id="currentGameType">501</span>
+                        <div class="header-right-group">
+                            <div class="game-type-badge">
+                                <span class="icon">🎯</span>
+                                <span id="currentGameType">501</span>
+                            </div>
+                            <div class="input-mode-toggle">
+                                <button class="mode-btn active" id="dartboardModeBtn" onclick="switchInputMode('dartboard')">
+                                    🎯 다트판
+                                </button>
+                                <button class="mode-btn" id="gridModeBtn" onclick="switchInputMode('grid')">
+                                    📊 격자표
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="score-table-wrapper">
@@ -126,33 +135,55 @@
                 </div>
             </div>
 
-            <!-- Right Panel: Dartboard -->
+            <!-- Right Panel: Dartboard / Grid Input -->
             <div class="game-right-panel">
-                <div class="dartboard-container">
-                    <div class="dartboard-wrapper" id="dartboardWrapper">
-                        <svg id="dartboard" viewBox="0 0 500 500"></svg>
-                        <!-- 좌상단: 현재 선수 이름 -->
-                        <div class="dartboard-overlay top-left">
-                            <span id="overlayPlayerName">-</span>
-                        </div>
-                        <!-- 좌하단: 취소 버튼 -->
-                        <button class="dartboard-overlay bottom-left control-btn undo-btn" id="undoBtn" onclick="undoThrow()" disabled>
-                            ↩ 취소
-                        </button>
-                        <!-- 우하단: 턴 확인 버튼 -->
-                        <button class="dartboard-overlay bottom-right control-btn confirm-btn" id="confirmBtn" onclick="confirmTurn()" disabled>
-                            ✓ 확인
-                        </button>
-                    </div>
-                </div>
-                <!-- Dartboard 아래 선수 정보 및 점수 (한 줄) -->
+                <!-- 선수 정보 및 점수 (상단) -->
                 <div class="dartboard-info">
                     <span class="current-player-display"><span id="currentPlayerDisplay">-</span>의 차례</span>
                     <span class="info-divider">│</span>
                     <span class="dart-individual-scores" id="dartIndividualScores"></span>
                     <span class="dart-total-score">= <span id="dartTotalScore">0</span></span>
                 </div>
+
+                <!-- 다트판 입력 모드 -->
+                <div class="input-mode dartboard-mode" id="dartboardMode">
+                    <div class="dartboard-container">
+                        <div class="dartboard-wrapper" id="dartboardWrapper">
+                            <svg id="dartboard" viewBox="0 0 500 500"></svg>
+                            <!-- 좌하단: 취소 버튼 -->
+                            <button class="dartboard-overlay bottom-left control-btn undo-btn" id="undoBtn" onclick="undoThrow()" disabled>
+                                Undo
+                            </button>
+                            <!-- 우하단: 턴 확인 버튼 -->
+                            <button class="dartboard-overlay bottom-right control-btn confirm-btn" id="confirmBtn" onclick="confirmTurn()" disabled>
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 격자표 입력 모드 -->
+                <div class="input-mode grid-mode" id="gridMode" style="display: none;">
+                    <div class="grid-input-container">
+                        <!-- 격자표 본체 (2단: 20~11 | 10~1) -->
+                        <div class="grid-body" id="gridBody">
+                            <!-- JS로 동적 생성 -->
+                        </div>
+                        <!-- 컨트롤 버튼 -->
+                        <div class="grid-controls">
+                            <button class="control-btn undo-btn" id="gridUndoBtn" onclick="undoThrow()" disabled>
+                                Undo
+                            </button>
+                            <button class="control-btn confirm-btn" id="gridConfirmBtn" onclick="confirmTurn()" disabled>
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- 좌하단 게임종료 버튼 -->
+            <button class="exit-btn" onclick="exitGame()">게임종료</button>
         </div>
 
         <!-- Winner Modal -->
@@ -183,4 +214,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
