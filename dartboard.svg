@@ -1,0 +1,122 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" id="dartboard-template">
+    <defs>
+        <!-- Gradient definitions for visual effects -->
+        <radialGradient id="boardGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffd700" stop-opacity="0.1"/>
+            <stop offset="100%" stop-color="#ffd700" stop-opacity="0"/>
+        </radialGradient>
+        
+        <!-- Colors -->
+        <style>
+            .board-bg { fill: #1a1a2e; stroke: #ffd700; stroke-width: 3; }
+            .wire { fill: none; stroke: silver; stroke-width: 1; }
+            .segment-green { fill: #00a86b; }
+            .segment-red { fill: #dc143c; }
+            .segment-light { fill: #f5f5dc; }
+            .segment-dark { fill: #1a1a1a; }
+            .segment-stroke { stroke: #c0c0c0; stroke-width: 0.5; }
+            .bull-outer { fill: #00a86b; }
+            .bull-inner { fill: #dc143c; }
+            .number-label { 
+                fill: #ffd700; 
+                font-size: 14px; 
+                font-weight: bold; 
+                font-family: 'Orbitron', sans-serif;
+                text-anchor: middle;
+                dominant-baseline: middle;
+            }
+        </style>
+    </defs>
+    
+    <!-- Background glow effect -->
+    <circle cx="250" cy="250" r="250" fill="url(#boardGlow)"/>
+    
+    <!-- Main board background -->
+    <circle cx="250" cy="250" r="240" class="board-bg"/>
+    
+    <!-- Wire frame circle -->
+    <circle cx="250" cy="250" r="220" class="wire"/>
+    
+    <!-- Segment 20 (top) - index 0 -->
+    <!-- Double ring -->
+    <path d="M 250 30 A 220 220 0 0 1 318.8 38.5 L 305.4 55.5 A 195 195 0 0 0 250 55 Z" class="segment-green segment-stroke"/>
+    <!-- Outer single -->
+    <path d="M 250 55 A 195 195 0 0 1 305.4 55.5 L 271.8 130 A 120 120 0 0 0 250 130 Z" class="segment-light segment-stroke"/>
+    <!-- Triple ring -->
+    <path d="M 250 130 A 120 120 0 0 1 271.8 130 L 266.3 145 A 105 105 0 0 0 250 145 Z" class="segment-green segment-stroke"/>
+    <!-- Inner single -->
+    <path d="M 250 145 A 105 105 0 0 1 266.3 145 L 254.3 225 A 25 25 0 0 0 250 225 Z" class="segment-light segment-stroke"/>
+    
+    <!-- Simplified dartboard representation -->
+    <!-- The full dartboard is generated dynamically by JavaScript -->
+    <!-- This SVG serves as a template/reference -->
+    
+    <!-- Bull's eye (outer) -->
+    <circle cx="250" cy="250" r="25" class="bull-outer segment-stroke"/>
+    
+    <!-- Bull's eye (inner) -->
+    <circle cx="250" cy="250" r="12" class="bull-inner segment-stroke"/>
+    
+    <!-- Number labels positioned around the board -->
+    <text x="250" y="18" class="number-label">20</text>
+    <text x="323" y="35" class="number-label">1</text>
+    <text x="385" y="78" class="number-label">18</text>
+    <text x="430" y="140" class="number-label">4</text>
+    <text x="455" y="215" class="number-label">13</text>
+    <text x="455" y="290" class="number-label">6</text>
+    <text x="430" y="365" class="number-label">10</text>
+    <text x="385" y="425" class="number-label">15</text>
+    <text x="323" y="468" class="number-label">2</text>
+    <text x="250" y="485" class="number-label">17</text>
+    <text x="177" y="468" class="number-label">3</text>
+    <text x="115" y="425" class="number-label">19</text>
+    <text x="70" y="365" class="number-label">7</text>
+    <text x="45" y="290" class="number-label">16</text>
+    <text x="45" y="215" class="number-label">8</text>
+    <text x="70" y="140" class="number-label">11</text>
+    <text x="115" y="78" class="number-label">14</text>
+    <text x="177" y="35" class="number-label">9</text>
+    <text x="210" y="18" class="number-label">12</text>
+    <text x="290" y="18" class="number-label">5</text>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</svg>
+

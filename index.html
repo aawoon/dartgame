@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>다트 게임</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        
+        <!-- Setup Screen -->
+        <div class="setup-screen" id="setupScreen">
+            <h1>🎯 DART GAME 🎯</h1>
+            
+            <div class="setup-container">
+                <!-- Left Panel: Game Settings -->
+                <div class="setup-left-panel">
+                    <!-- Game Type Selection -->
+                    <div class="setup-section">
+                        <h2>🎮 게임 종류 선택</h2>
+                        <div class="option-group" id="gameTypeGroup">
+                            <button class="option-btn selected" data-type="countup">카운트업</button>
+                            <button class="option-btn" data-type="301">301</button>
+                            <button class="option-btn" data-type="501">501</button>
+                            <button class="option-btn" data-type="cricket">크리켓</button>
+                            <button class="option-btn" data-type="around">어라운드 더 클락</button>
+                        </div>
+                        
+                        <!-- 턴수 선택 -->
+                        <div class="turn-limit-config" id="turnLimitConfig">
+                            <label>⏱️ 최대 턴수</label>
+                            <div class="option-group small" id="turnLimitGroup">
+                                <!-- 동적으로 생성됨 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mode Selection -->
+                    <div class="setup-section">
+                        <h2>👥 게임 모드</h2>
+                        <div class="option-group" id="gameModeGroup">
+                            <button class="option-btn selected" data-mode="individual">개인전</button>
+                            <button class="option-btn" data-mode="team">팀전</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Player Registration -->
+                <div class="setup-right-panel">
+                    <!-- Individual Player Setup -->
+                    <div class="setup-section" id="individualSetup">
+                        <h2>🎯 선수 등록 (1~4명)</h2>
+                        <div class="player-inputs" id="individualPlayers">
+                            <div class="player-input-group">
+                                <label>선수 1</label>
+                                <input type="text" placeholder="이름 입력" class="player-name">
+                                <button class="remove-player-btn" onclick="removePlayer(this)">✕</button>
+                            </div>
+                            <div class="player-input-group">
+                                <label>선수 2</label>
+                                <input type="text" placeholder="이름 입력" class="player-name">
+                                <button class="remove-player-btn" onclick="removePlayer(this)">✕</button>
+                            </div>
+                        </div>
+                        <button class="add-player-btn" onclick="addIndividualPlayer()">+ 선수 추가</button>
+                    </div>
+
+                    <!-- Team Setup -->
+                    <div class="setup-section" id="teamSetup" style="display:none;">
+                        <h2>🏆 팀 설정</h2>
+                        
+                        <!-- 팀 개수 선택 -->
+                        <div class="team-config">
+                            <div class="config-row">
+                                <label>참가 팀 수</label>
+                                <div class="option-group small" id="teamCountGroup">
+                                    <button class="option-btn selected" data-count="2">2팀</button>
+                                    <button class="option-btn" data-count="3">3팀</button>
+                                    <button class="option-btn" data-count="4">4팀</button>
+                                </div>
+                            </div>
+                            <div class="config-row">
+                                <label>팀당 선수</label>
+                                <div class="option-group small" id="playersPerTeamGroup">
+                                    <button class="option-btn selected" data-count="2">2명</button>
+                                    <button class="option-btn" data-count="3">3명</button>
+                                    <button class="option-btn" data-count="4">4명</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 팀별 선수 입력 -->
+                        <div id="teamsContainer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="start-btn" onclick="startGame()">🎯 게임 시작</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div class="game-screen" id="gameScreen">
+            <!-- Left Panel: Score & Status -->
+            <div class="game-left-panel">
+                <div class="scoreboard">
+                    <div class="scoreboard-header">
+                        <button class="exit-btn" onclick="exitGame()">✕ 종료</button>
+                        <h2>📊 점수판</h2>
+                        <div class="game-type-badge">
+                            <span class="icon">🎯</span>
+                            <span id="currentGameType">501</span>
+                        </div>
+                    </div>
+                    <div class="score-table-wrapper">
+                        <table class="score-table" id="scoreTable">
+                            <thead id="scoreHeader"></thead>
+                            <tbody id="scoreBody"></tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Cricket Board -->
+                    <div class="cricket-board" id="cricketBoard" style="display: none;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Dartboard -->
+            <div class="game-right-panel">
+                <div class="dartboard-container">
+                    <div class="dartboard-wrapper" id="dartboardWrapper">
+                        <svg id="dartboard" viewBox="0 0 500 500"></svg>
+                        <!-- 좌상단: 현재 선수 이름 -->
+                        <div class="dartboard-overlay top-left">
+                            <span id="overlayPlayerName">-</span>
+                        </div>
+                        <!-- 좌하단: 취소 버튼 -->
+                        <button class="dartboard-overlay bottom-left control-btn undo-btn" id="undoBtn" onclick="undoThrow()" disabled>
+                            ↩ 취소
+                        </button>
+                        <!-- 우하단: 턴 확인 버튼 -->
+                        <button class="dartboard-overlay bottom-right control-btn confirm-btn" id="confirmBtn" onclick="confirmTurn()" disabled>
+                            ✓ 확인
+                        </button>
+                    </div>
+                </div>
+                <!-- Dartboard 아래 선수 정보 및 점수 (한 줄) -->
+                <div class="dartboard-info">
+                    <span class="current-player-display"><span id="currentPlayerDisplay">-</span>의 차례</span>
+                    <span class="info-divider">│</span>
+                    <span class="dart-individual-scores" id="dartIndividualScores"></span>
+                    <span class="dart-total-score">= <span id="dartTotalScore">0</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Winner Modal -->
+        <div class="winner-modal" id="winnerModal">
+            <div class="winner-content">
+                <h2>🏆 WINNER 🏆</h2>
+                <div class="winner-name" id="winnerName"></div>
+                <button class="play-again-btn" onclick="resetGame()">다시 하기</button>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- Custom Dialog Modal -->
+        <div class="custom-dialog" id="customDialog">
+            <div class="dialog-content">
+                <div class="dialog-icon" id="dialogIcon">⚠️</div>
+                <div class="dialog-message" id="dialogMessage"></div>
+                <div class="dialog-buttons">
+                    <button class="dialog-btn cancel-btn" id="dialogCancelBtn">취소</button>
+                    <button class="dialog-btn confirm-btn" id="dialogConfirmBtn">확인</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
