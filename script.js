@@ -1,3 +1,37 @@
+// ===== TTS (Text-to-Speech) Functions =====
+function speak(text, lang = 'ko-KR') {
+    // 브라우저가 TTS를 지원하는지 확인
+    if (!('speechSynthesis' in window)) {
+        console.warn('이 브라우저는 TTS를 지원하지 않습니다.');
+        return;
+    }
+    
+    // 이전 음성 중지
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    utterance.rate = 1.0;  // 속도 (0.1 ~ 10)
+    utterance.pitch = 1.0; // 피치 (0 ~ 2)
+    utterance.volume = 1.0; // 볼륨 (0 ~ 1)
+    
+    // 한국어 음성 찾기
+    const voices = window.speechSynthesis.getVoices();
+    const koreanVoice = voices.find(voice => voice.lang.includes('ko'));
+    if (koreanVoice) {
+        utterance.voice = koreanVoice;
+    }
+    
+    window.speechSynthesis.speak(utterance);
+}
+
+// 음성 목록이 로드된 후 사용할 수 있도록 초기화
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+    };
+}
+
 // Toast Notification Functions
 function showToast(message, type = 'info', title = '', duration = 3000) {
     const container = document.getElementById('toastContainer');
@@ -124,9 +158,30 @@ let gameState = {
     round: 1,
     maxTurns: 5, // 최대 턴수
     scores: {},
+    teamScores: {}, // 팀 점수 (301/501 팀전용)
     roundScores: {}, // 라운드별 점수: { playerId: [라운드1점수, 라운드2점수, ...] }
-    cricketScores: {} // 크리켓용: { playerId: { 20: 0, 19: 0, ... } }
+    cricketScores: {}, // 크리켓용: { playerId: { 20: 0, 19: 0, ... } }
+    inputMode: 'dartboard' // 'dartboard' 또는 'grid'
 };
+
+// 현재 플레이어/팀의 점수 가져오기 (301/501 팀전은 팀 점수 반환)
+function getCurrentScore(player) {
+    if (gameState.mode === 'team' && (gameState.type === '501' || gameState.type === '301')) {
+        const teamName = player.team || gameState.teams[gameState.currentTeamIndex].name;
+        return gameState.teamScores[teamName];
+    }
+    return gameState.scores[player.id];
+}
+
+// 현재 플레이어/팀의 점수 설정 (301/501 팀전은 팀 점수 설정)
+function setCurrentScore(player, score) {
+    if (gameState.mode === 'team' && (gameState.type === '501' || gameState.type === '301')) {
+        const teamName = player.team || gameState.teams[gameState.currentTeamIndex].name;
+        gameState.teamScores[teamName] = score;
+    } else {
+        gameState.scores[player.id] = score;
+    }
+}
 
 // 게임별 턴수 옵션
 const turnLimitOptions = {
@@ -281,6 +336,154 @@ function generateTeamInputs() {
         `;
         
         container.appendChild(teamSection);
+    }
+}
+
+// ===== 입력 모드 관련 함수 =====
+
+// 입력 모드 전환
+function switchInputMode(mode) {
+    gameState.inputMode = mode;
+    
+    const dartboardMode = document.getElementById('dartboardMode');
+    const gridMode = document.getElementById('gridMode');
+    const dartboardBtn = document.getElementById('dartboardModeBtn');
+    const gridBtn = document.getElementById('gridModeBtn');
+    
+    if (mode === 'dartboard') {
+        dartboardMode.style.display = 'block';
+        gridMode.style.display = 'none';
+        dartboardBtn.classList.add('active');
+        gridBtn.classList.remove('active');
+    } else {
+        dartboardMode.style.display = 'none';
+        gridMode.style.display = 'block';
+        dartboardBtn.classList.remove('active');
+        gridBtn.classList.add('active');
+    }
+    
+    // 버튼 상태 동기화
+    syncControlButtons();
+}
+
+// 컨트롤 버튼 상태 동기화
+function syncControlButtons() {
+    const dartCount = gameState.currentDarts.length;
+    const undoDisabled = dartCount === 0;
+    const confirmDisabled = dartCount < 3;
+    
+    // 다트판 모드 버튼
+    const undoBtn = document.getElementById('undoBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
+    if (undoBtn) undoBtn.disabled = undoDisabled;
+    if (confirmBtn) confirmBtn.disabled = confirmDisabled;
+    
+    // 격자 모드 버튼
+    const gridUndoBtn = document.getElementById('gridUndoBtn');
+    const gridConfirmBtn = document.getElementById('gridConfirmBtn');
+    if (gridUndoBtn) gridUndoBtn.disabled = undoDisabled;
+    if (gridConfirmBtn) gridConfirmBtn.disabled = confirmDisabled;
+}
+
+// 격자표 생성 (2단 배열: 왼쪽 20~11, 오른쪽 10~1)
+function createScoreGrid() {
+    const gridBody = document.getElementById('gridBody');
+    if (!gridBody) return;
+    
+    gridBody.innerHTML = '';
+    
+    // 왼쪽: 20~11, 오른쪽: 10~1
+    const leftNumbers = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11];
+    const rightNumbers = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+    
+    for (let i = 0; i < 10; i++) {
+        const leftNum = leftNumbers[i];
+        const rightNum = rightNumbers[i];
+        
+        const row = document.createElement('div');
+        row.className = 'grid-row-dual';
+        row.innerHTML = `
+            <div class="grid-cell-group">
+                <div class="grid-number">${leftNum}</div>
+                <button class="grid-btn single" onclick="handleGridClick(${leftNum}, 1)">S</button>
+                <button class="grid-btn double" onclick="handleGridClick(${leftNum}, 2)">D</button>
+                <button class="grid-btn triple" onclick="handleGridClick(${leftNum}, 3)">T</button>
+            </div>
+            <div class="grid-cell-group">
+                <div class="grid-number">${rightNum}</div>
+                <button class="grid-btn single" onclick="handleGridClick(${rightNum}, 1)">S</button>
+                <button class="grid-btn double" onclick="handleGridClick(${rightNum}, 2)">D</button>
+                <button class="grid-btn triple" onclick="handleGridClick(${rightNum}, 3)">T</button>
+            </div>
+        `;
+        gridBody.appendChild(row);
+    }
+    
+    // Bull + MISS 행 추가 (중앙 배치)
+    const bullRow = document.createElement('div');
+    bullRow.className = 'grid-row-bull';
+    bullRow.innerHTML = `
+        <div class="bull-miss-group">
+            <button class="grid-btn single bull-btn" onclick="handleGridClick(25, 1)">25</button>
+            <button class="grid-btn double bull-btn" onclick="handleGridClick(25, 2)">50</button>
+            <button class="grid-btn miss-btn" onclick="handleGridMiss()">MISS</button>
+        </div>
+    `;
+    gridBody.appendChild(bullRow);
+}
+
+// 격자 클릭 처리
+function handleGridClick(baseNumber, multiplier) {
+    if (gameState.currentDarts.length >= 3) {
+        toastWarning('확인 버튼을 눌러 턴을 마무리하세요.', '다트 3개 완료');
+        return;
+    }
+    
+    const score = baseNumber * multiplier;
+    
+    gameState.currentDarts.push({ x: 250, y: 250, score: score, isFault: false });
+    gameState.currentDartDetails.push({
+        baseNumber: baseNumber,
+        multiplier: multiplier,
+        score: score,
+        isFault: false
+    });
+    
+    gameState.turnScore += score;
+    
+    // UI 업데이트
+    updateTurnScoreDisplay();
+    syncControlButtons();
+    
+    // 3개 완료 시 자동 활성화
+    if (gameState.currentDarts.length === 3) {
+        toastInfo('확인 버튼을 눌러 턴을 완료하세요.', '다트 3개 완료');
+    }
+}
+
+// 격자 MISS 처리
+function handleGridMiss() {
+    if (gameState.currentDarts.length >= 3) {
+        toastWarning('확인 버튼을 눌러 턴을 마무리하세요.', '다트 3개 완료');
+        return;
+    }
+    
+    gameState.currentDarts.push({ x: 250, y: 250, score: 0, isFault: true });
+    gameState.currentDartDetails.push({
+        baseNumber: 0,
+        multiplier: 0,
+        score: 0,
+        isFault: true
+    });
+    
+    // UI 업데이트
+    updateTurnScoreDisplay();
+    syncControlButtons();
+    
+    showFaultIndicator();
+    
+    if (gameState.currentDarts.length === 3) {
+        toastInfo('확인 버튼을 눌러 턴을 완료하세요.', '다트 3개 완료');
     }
 }
 
@@ -489,11 +692,7 @@ function handleDartThrow(e) {
 
     // Update UI
     updateTurnScoreDisplay();
-    document.getElementById('undoBtn').disabled = false;
-    
-    if (gameState.currentDarts.length === 3) {
-        document.getElementById('confirmBtn').disabled = false;
-    }
+    syncControlButtons();
 }
 
 // 다트핀 SVG 아이콘 (사선으로 눕혀진 모양)
@@ -614,11 +813,7 @@ function handleMissClick(x, y) {
 
     // Update UI
     updateTurnScoreDisplay();
-    document.getElementById('undoBtn').disabled = false;
-    
-    if (gameState.currentDarts.length === 3) {
-        document.getElementById('confirmBtn').disabled = false;
-    }
+    syncControlButtons();
 }
 
 function addDartMarker(x, y, number, isFault = false) {
@@ -703,7 +898,7 @@ function undoThrow() {
     gameState.currentDartDetails.pop();
     gameState.turnScore -= lastDart.score;
 
-    // Remove marker
+    // Remove marker (다트판 모드에서만)
     const markers = document.querySelectorAll('.dart-mark');
     if (markers.length > 0) {
         markers[markers.length - 1].remove();
@@ -711,11 +906,7 @@ function undoThrow() {
 
     // Update UI
     updateTurnScoreDisplay();
-    document.getElementById('confirmBtn').disabled = true;
-    
-    if (gameState.currentDarts.length === 0) {
-        document.getElementById('undoBtn').disabled = true;
-    }
+    syncControlButtons();
 }
 
 function confirmTurn() {
@@ -724,18 +915,22 @@ function confirmTurn() {
     
     // Update score based on game type
     if (gameState.type === '501' || gameState.type === '301') {
-        gameState.scores[currentPlayer.id] -= gameState.turnScore;
+        let currentScore = getCurrentScore(currentPlayer);
+        currentScore -= gameState.turnScore;
         
         // Check for bust (went below 0 or exactly 0 without double)
-        if (gameState.scores[currentPlayer.id] < 0) {
-            // Bust - restore score
-            gameState.scores[currentPlayer.id] += gameState.turnScore;
+        if (currentScore < 0) {
+            // Bust - restore score (점수 변경 없음)
             roundScore = 0; // 버스트시 0점 기록
-        } else if (gameState.scores[currentPlayer.id] === 0) {
-            // 라운드 점수 저장 후 승리
-            gameState.roundScores[currentPlayer.id].push(roundScore);
-            endGame(currentPlayer);
-            return;
+        } else {
+            setCurrentScore(currentPlayer, currentScore);
+            
+            if (currentScore === 0) {
+                // 라운드 점수 저장 후 승리
+                gameState.roundScores[currentPlayer.id].push(roundScore);
+                endGame(currentPlayer);
+                return;
+            }
         }
         
         // 라운드별 점수 저장
@@ -781,11 +976,21 @@ function confirmTurn() {
         gameState.roundScores[currentPlayer.id].push(roundScore);
     }
 
+    // 현재 턴 점수 저장 (TTS용)
+    const earnedScore = gameState.turnScore;
+    
     // Clear darts
     clearDarts();
 
     // Next player
     nextPlayer();
+    
+    // TTS: 점수 및 다음 플레이어 안내
+    const nextPlayerInfo = getCurrentPlayer();
+    const nextPlayerName = gameState.mode === 'team' 
+        ? `${nextPlayerInfo.team} ${nextPlayerInfo.name}` 
+        : nextPlayerInfo.name;
+    speak(`${earnedScore}점을 획득하였습니다. 다음 플레이어는 ${nextPlayerName}입니다.`);
 }
 
 // 턴 제한 초과 확인 (501/301)
@@ -805,13 +1010,14 @@ function checkTurnLimitExceeded() {
 function get01Winner() {
     const allPlayers = getAllPlayers();
     
-    // 남은 점수가 가장 적은 선수가 승자
+    // 남은 점수가 가장 적은 선수/팀이 승자
     let winner = allPlayers[0];
-    let lowestScore = gameState.scores[winner.id];
+    let lowestScore = getCurrentScore(winner);
     
     for (const player of allPlayers) {
-        if (gameState.scores[player.id] < lowestScore) {
-            lowestScore = gameState.scores[player.id];
+        const playerScore = getCurrentScore(player);
+        if (playerScore < lowestScore) {
+            lowestScore = playerScore;
             winner = player;
         }
     }
@@ -914,9 +1120,32 @@ function checkCountupComplete() {
 }
 
 function getCountupWinner() {
-    const allPlayers = getAllPlayers();
+    if (gameState.mode === 'team') {
+        // 팀전: 팀 합계 점수로 승자 결정
+        let winningTeam = null;
+        let highestTeamScore = -1;
+        
+        gameState.teams.forEach(team => {
+            let teamTotal = 0;
+            team.players.forEach(player => {
+                const roundScores = gameState.roundScores[player.id] || [];
+                teamTotal += roundScores.reduce((sum, s) => sum + s, 0);
+            });
+            
+            if (teamTotal > highestTeamScore) {
+                highestTeamScore = teamTotal;
+                winningTeam = team;
+            }
+        });
+        
+        // 우승 팀의 첫 번째 선수를 반환 (팀명 표시용)
+        if (winningTeam) {
+            return { ...winningTeam.players[0], team: winningTeam.name, isTeamWin: true };
+        }
+    }
     
-    // Find player with highest score
+    // 개인전: 개인 점수로 승자 결정
+    const allPlayers = getAllPlayers();
     let winner = allPlayers[0];
     let highestScore = gameState.scores[winner.id];
     
@@ -987,8 +1216,7 @@ function clearDarts() {
     gameState.turnScore = 0;
     document.querySelectorAll('.dart-mark').forEach(m => m.remove());
     updateTurnScoreDisplay();
-    document.getElementById('undoBtn').disabled = true;
-    document.getElementById('confirmBtn').disabled = true;
+    syncControlButtons();
 }
 
 function nextPlayer() {
@@ -1062,12 +1290,6 @@ function updateDisplay() {
         currentPlayerDisplayEl.textContent = playerDisplayName;
     }
     
-    // 다트판 좌상단 오버레이 선수 이름
-    const overlayPlayerNameEl = document.getElementById('overlayPlayerName');
-    if (overlayPlayerNameEl) {
-        overlayPlayerNameEl.textContent = playerDisplayName;
-    }
-
     // Update scoreboard
     updateScoreboard();
     
@@ -1094,18 +1316,8 @@ function updateScoreboard() {
         headerRow.innerHTML = '<th>#</th><th>선수</th><th>점수</th><th>상태</th>';
         header.appendChild(headerRow);
 
-        // 팀전은 순서 고정, 개인전은 점수순 정렬
-        let displayPlayers;
-        if (gameState.mode === 'team') {
-            displayPlayers = allPlayers;
-        } else {
-            displayPlayers = [...allPlayers].sort((a, b) => {
-                const aClosedCount = cricketNumbers.filter(n => gameState.cricketScores[a.id][n] >= 3).length;
-                const bClosedCount = cricketNumbers.filter(n => gameState.cricketScores[b.id][n] >= 3).length;
-                if (bClosedCount !== aClosedCount) return bClosedCount - aClosedCount;
-                return gameState.scores[b.id] - gameState.scores[a.id];
-            });
-        }
+        // 원래 순서 유지
+        const displayPlayers = allPlayers;
 
         displayPlayers.forEach((player, index) => {
             const row = document.createElement('tr');
@@ -1150,58 +1362,89 @@ function updateScoreboard() {
         headerRow.innerHTML = headerHtml;
         header.appendChild(headerRow);
 
-        // 팀전은 순서 고정, 개인전은 점수순 정렬
-        let displayPlayers;
+        // 원래 순서 유지
+        const displayPlayers = allPlayers;
+
+        // 팀전인 경우 팀별로 그룹화하여 표시
         if (gameState.mode === 'team') {
-            // 팀전: 원래 순서 유지
-            displayPlayers = allPlayers;
-        } else {
-            // 개인전: 점수순 정렬
-            displayPlayers = [...allPlayers].sort((a, b) => {
-                if (gameState.type === '501' || gameState.type === '301') {
-                    return gameState.scores[a.id] - gameState.scores[b.id];
+            gameState.teams.forEach((team, teamIndex) => {
+                let teamTotalScore = 0;
+                
+                // 팀의 각 선수 행 추가
+                team.players.forEach((player) => {
+                    const row = document.createElement('tr');
+                    if (player.id === getCurrentPlayer().id) {
+                        row.classList.add('current-player');
+                    }
+                    
+                    const roundScores = gameState.roundScores[player.id] || [];
+                    const playerTotal = roundScores.reduce((sum, s) => sum + s, 0);
+                    teamTotalScore += playerTotal;
+                    
+                    let rowHtml = `<td class="player-col">${team.name} - ${player.name}</td>`;
+                    
+                    for (let r = 0; r < maxRounds; r++) {
+                        const score = roundScores[r];
+                        rowHtml += `<td class="round-col">${score !== undefined ? score : '-'}</td>`;
+                    }
+                    
+                    rowHtml += `<td class="total-col">${playerTotal}</td>`;
+                    
+                    if (gameState.type === '501' || gameState.type === '301') {
+                        rowHtml += `<td class="remain-col">-</td>`;
+                    }
+
+                    row.innerHTML = rowHtml;
+                    body.appendChild(row);
+                });
+                
+                // 팀 합계 행 추가
+                const teamRow = document.createElement('tr');
+                teamRow.className = 'team-total-row';
+                
+                let teamRowHtml = `<td class="player-col team-name">📊 ${team.name} 합계</td>`;
+                for (let r = 0; r < maxRounds; r++) {
+                    teamRowHtml += `<td class="round-col">-</td>`;
                 }
-                return gameState.scores[b.id] - gameState.scores[a.id];
+                teamRowHtml += `<td class="total-col total-score">${teamTotalScore}</td>`;
+                
+                if (gameState.type === '501' || gameState.type === '301') {
+                    const teamRemain = gameState.teamScores[team.name];
+                    teamRowHtml += `<td class="remain-col total-score">${teamRemain}</td>`;
+                }
+                
+                teamRow.innerHTML = teamRowHtml;
+                body.appendChild(teamRow);
+            });
+        } else {
+            // 개인전
+            displayPlayers.forEach((player) => {
+                const row = document.createElement('tr');
+                if (player.id === getCurrentPlayer().id) {
+                    row.classList.add('current-player');
+                }
+                
+                const roundScores = gameState.roundScores[player.id] || [];
+                const totalScore = roundScores.reduce((sum, s) => sum + s, 0);
+                
+                let rowHtml = `<td class="player-col">${player.name}</td>`;
+                
+                for (let r = 0; r < maxRounds; r++) {
+                    const score = roundScores[r];
+                    rowHtml += `<td class="round-col">${score !== undefined ? score : '-'}</td>`;
+                }
+                
+                rowHtml += `<td class="total-col total-score">${totalScore}</td>`;
+                
+                if (gameState.type === '501' || gameState.type === '301') {
+                    const remainScore = getCurrentScore(player);
+                    rowHtml += `<td class="remain-col">${remainScore}</td>`;
+                }
+
+                row.innerHTML = rowHtml;
+                body.appendChild(row);
             });
         }
-
-        displayPlayers.forEach((player) => {
-            const row = document.createElement('tr');
-            if (player.id === getCurrentPlayer().id) {
-                row.classList.add('current-player');
-            }
-            
-            const roundScores = gameState.roundScores[player.id] || [];
-            const totalScore = roundScores.reduce((sum, s) => sum + s, 0);
-            
-            // 선수 이름 (팀전이면 팀명 포함)
-            const playerName = gameState.mode === 'team' && player.team
-                ? `${player.team} - ${player.name}` 
-                : player.name;
-            
-            let rowHtml = `<td class="player-col">${playerName}</td>`;
-            
-            // 라운드별 점수
-            for (let r = 0; r < maxRounds; r++) {
-                const score = roundScores[r];
-                if (score !== undefined) {
-                    rowHtml += `<td class="round-col">${score}</td>`;
-                } else {
-                    rowHtml += `<td class="round-col">-</td>`;
-                }
-            }
-            
-            // 합계
-            rowHtml += `<td class="total-col total-score">${totalScore}</td>`;
-            
-            // 501/301은 남은 점수
-            if (gameState.type === '501' || gameState.type === '301') {
-                rowHtml += `<td class="remain-col">${gameState.scores[player.id]}</td>`;
-            }
-
-            row.innerHTML = rowHtml;
-            body.appendChild(row);
-        });
     }
 }
 
@@ -1284,6 +1527,14 @@ function startGame() {
         ? gameState.players 
         : gameState.teams.flatMap(team => team.players);
     
+    // 팀 점수 초기화 (301/501 팀전용)
+    gameState.teamScores = {};
+    if (gameState.mode === 'team' && (gameState.type === '501' || gameState.type === '301')) {
+        gameState.teams.forEach(team => {
+            gameState.teamScores[team.name] = startScore;
+        });
+    }
+    
     allPlayers.forEach(p => {
         gameState.scores[p.id] = startScore;
         gameState.roundScores[p.id] = []; // 라운드별 점수 초기화
@@ -1307,21 +1558,46 @@ function startGame() {
     // Show/hide cricket board
     document.getElementById('cricketBoard').style.display = gameState.type === 'cricket' ? 'grid' : 'none';
     
+    // 격자표 생성
+    createScoreGrid();
+    
+    // 입력 모드 초기화 (다트판 모드로 시작)
+    switchInputMode('dartboard');
+    
     updateDisplay();
     updateTurnScoreDisplay();
     
     if (gameState.type === 'cricket') {
         updateCricketBoard();
     }
+    
+    // TTS: 게임 시작 안내 + 첫 번째 플레이어 안내
+    const gameName = gameTypeNames[gameState.type];
+    const firstPlayer = getCurrentPlayer();
+    const firstPlayerName = gameState.mode === 'team' 
+        ? `${firstPlayer.team} ${firstPlayer.name}` 
+        : firstPlayer.name;
+    speak(`${gameName} 게임을 시작합니다. ${firstPlayerName}님 쏘세요!`);
 }
 
 function endGame(winner) {
-    const winnerName = gameState.mode === 'team' 
-        ? `${winner.team} - ${winner.name}` 
-        : winner.name;
+    let winnerName;
+    
+    if (winner.isTeamWin) {
+        // 팀 합계로 우승한 경우 팀명만 표시
+        winnerName = `🏆 ${winner.team}`;
+    } else if (gameState.mode === 'team') {
+        // 팀전에서 개인이 우승한 경우 (301/501 등)
+        winnerName = `${winner.team} - ${winner.name}`;
+    } else {
+        winnerName = winner.name;
+    }
     
     document.getElementById('winnerName').textContent = winnerName;
     document.getElementById('winnerModal').style.display = 'flex';
+    
+    // TTS: 우승자 안내
+    speak(`${winnerName} 우승을 축하합니다!`);
     
     // Confetti!
     createConfetti();
@@ -1389,7 +1665,8 @@ function resetGame() {
         maxTurns: selectedTurns,
         scores: {},
         roundScores: {},
-        cricketScores: {}
+        cricketScores: {},
+        inputMode: 'dartboard'
     };
     
     clearDarts();
@@ -1397,4 +1674,3 @@ function resetGame() {
     // 턴수 옵션 초기화
     updateTurnLimitOptions();
 }
-
